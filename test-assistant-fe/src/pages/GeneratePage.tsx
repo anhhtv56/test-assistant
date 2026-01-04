@@ -1,13 +1,33 @@
-import {useState} from 'react';
+import { useState } from 'react';
+import api from '../lib/api';
 
 export default function GeneratePage() {
 
   const [issueKey, setIssueKey] = useState('');
+  const [prelight, setPrelight] = useState<any | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  async function analyze() {
+    setAnalyzing(true);
+    setPrelight(null);
+    if (!issueKey.trim()) return;
+    try {
+      const res = await api.post('/generations/prelight', { issueKey: issueKey.trim() });
+      console.log('Analysis result:', res);
+      setPrelight(res);
+    } catch (err: any) {
+      console.log('Come to try catch error');
+      console.log('Analysis error:', err);
+      setPrelight({ error: err?.response?.data?.error || 'Analysis failed' });
+    } finally {
+      setAnalyzing(false);
+    }
+  }
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Generate Test Cases</h1>
+        <h1 className="text-3xl font-bo ld text-gray-900">Generate Test Cases</h1>
         <p className="mt-2 text-gray-600">Enter a JIRA issue key to analyze and generate comprehensive test cases</p>
       </div>
 
@@ -22,11 +42,12 @@ export default function GeneratePage() {
             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
           />
           <button
-            onClick={() => console.log('Analyze clicked:', issueKey)}
-            disabled={!issueKey.trim()}
+            onClick={analyze}
+            disabled={analyzing || !issueKey.trim()}
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+
           >
-            Analyze
+            {analyzing ? 'Analyzing...' : 'Analyze'}
           </button>
           <button
             onClick={() => console.log('Generate clicked:', issueKey)}
@@ -37,6 +58,17 @@ export default function GeneratePage() {
           </button>
         </div>
       </div>
+      {/* prelight Results */}
+      {prelight && (
+        <div>
+          <h2> Analysis results</h2>
+          {prelight.error ? (
+            <div>{prelight.error}</div>
+          ) : (
+            <div>RESULT</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

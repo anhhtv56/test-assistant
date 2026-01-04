@@ -27,3 +27,10 @@ export const jwtConfig = {
   refreshTokenTtlSec: Number(process.env.JWT_REFRESH_TTL_SEC),
   secret: process.env.JWT_SECRET
 }
+
+// Jira service account config
+export const jiraConfig = {
+  baseURL: process.env.JIRA_BASE_URL,
+  email: process.env.JIRA_EMAIL,
+  apiToken: process.env.JIRA_API_TOKEN
+}

@@ -3,9 +3,10 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GeneratePage from './pages/GeneratePage'
 import DashboardPage from './pages/DashboardPage'
+import { useAuthStore } from './state/auth'
 
 function PrivateRoute({ children }: { children: React.JSX.Element }) {
-  const token = true;
+  const token = useAuthStore((s) => s.accessToken);
   if (token) {
     return children;
   } else {
@@ -14,6 +15,7 @@ function PrivateRoute({ children }: { children: React.JSX.Element }) {
 }
 
 function Layout({ children }: { children: React.JSX.Element }) {
+  const { accessToken, logout, user } = useAuthStore();
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   if (isAuthPage) {
@@ -52,9 +54,18 @@ function Layout({ children }: { children: React.JSX.Element }) {
             </nav>
 
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 hidden sm:block">
-                user@example.com
-              </span>
+              {accessToken && user && (
+                <span className="text-sm text-gray-600 hidden sm:block">
+                  {user.email}
+                </span>
+              )}
+              {accessToken && (
+                <button
+                  className='px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+                  onClick={logout}>
+                  Logout
+                </button>
+              )}
             </div>
           </div>
         </div>

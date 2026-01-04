@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import { connectMongo } from './config/index.js';
 import authRouter from './routes/auth.js';
+import generationRouter from './routes/generations.js';
 import { logger } from './utils/logger.js';
 
 const app = express();
@@ -36,11 +37,11 @@ connectMongo().catch((err) => {
 
 // Routes
 app.use('/auth', authRouter);
+app.use('/generations', generationRouter);
 
 // Log registered routes
 logger.info('✅ Registered routes:');
 logger.info('  POST /auth/register');
-
 // 404 Handler - Route not found
 app.use((req, res) => {
   logger.info(`404 - Route not found: ${req.method} ${req.path}`);
