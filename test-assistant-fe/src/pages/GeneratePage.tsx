@@ -13,11 +13,8 @@ export default function GeneratePage() {
     if (!issueKey.trim()) return;
     try {
       const res = await api.post('/generations/prelight', { issueKey: issueKey.trim() });
-      console.log('Analysis result:', res);
-      setPrelight(res);
+      setPrelight(res.data);
     } catch (err: any) {
-      console.log('Come to try catch error');
-      console.log('Analysis error:', err);
       setPrelight({ error: err?.response?.data?.error || 'Analysis failed' });
     } finally {
       setAnalyzing(false);
@@ -58,14 +55,47 @@ export default function GeneratePage() {
           </button>
         </div>
       </div>
-      {/* prelight Results */}
+      {/* Preflight Results */}
       {prelight && (
-        <div>
-          <h2> Analysis results</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Analysis Results</h2>
           {prelight.error ? (
-            <div>{prelight.error}</div>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {prelight.error}
+            </div>
           ) : (
-            <div>RESULT</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Issue Key</span>
+                  <p className="text-lg font-semibold text-gray-900">{prelight.issueKey}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Title</span>
+                  <p className="text-gray-900">{prelight.title}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">UI Story</span>
+                  <p className={`font-semibold ${prelight.isUiStory ? 'text-green-600' : 'text-gray-600'}`}>
+                    {prelight.isUiStory ? 'Yes' : 'No'}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Attachments</span>
+                  <p className="text-gray-900">{prelight.attachments || 0}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Estimated Tokens</span>
+                  <p className="text-gray-900">{prelight.estimatedTokens || 0}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Estimated Cost</span>
+                  <p className="text-gray-900">${typeof prelight.estimatedCost === 'string' ? prelight.estimatedCost : (Number(prelight.estimatedCost) || 0).toFixed(4)}</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

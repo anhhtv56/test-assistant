@@ -29,6 +29,7 @@ api.interceptors.response.use(
         window.location.replace('/login');
       }
     }
+    return Promise.reject(error);
   }
   
 );
