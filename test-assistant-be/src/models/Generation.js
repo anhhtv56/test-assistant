@@ -42,7 +42,7 @@ const generationSchema = new mongoose.Schema({
   status: { type: String, enum: ['completed', 'failed'] },
   createdAt: { type: Date, default: Date.now },
   startedAt: { type: Date },
-  completeAt: { type: Date },
+  completedAt: { type: Date },
   generationTimeSeconds: { type: Number },
   cost: { type: Number },
   tokenUsage: {
