@@ -23,7 +23,7 @@ const versionSchema = new mongoose.Schema({
   version: { type: Number, required: true },
   content: { type: String, required: true },
   updatedAt: { type: Date, default: Date.now },
-  updateBy: { type: String, required: true },
+  updatedBy: { type: String, required: true },
   notes: { type: String }
 }, { _id: false });
 

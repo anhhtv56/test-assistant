@@ -220,4 +220,41 @@ router.post('/testcases', requireAuth, async (req, res, next) => {
   }
 });
 
+router.get('/:id/view', requireAuth, async (req, res, next) => {
+  try {
+    const gen = await Generation.findById(req.params.id);
+    if (!gen) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+
+    const isOwner = gen.email === req.user.email;
+    const isPublishedAndCompleted = gen.published && gen.status === 'completed';
+
+    if (!isOwner && !isPublishedAndCompleted) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    const latestVersion = gen.versions && gen.versions.length > 0
+      ? gen.versions[gen.versions.length - 1]
+      : null;
+    return res.json({
+      success: true,
+      data: {
+        content: gen.result?.markdown?.content || '',
+        filename: gen.result?.markdown?.filename || 'output.md',
+        format: 'markdown',
+        published: gen.published || false,
+        publishedAt: gen.publishedAt,
+        publishedBy: gen.publishedBy,
+        currentVersion: gen.currentVersion || 1,
+        versions: gen.versions || [],
+        lastUpdatedBy: latestVersion?.updatedBy || gen.email,
+        lastUpdatedAt: latestVersion?.updatedAt || gen.updatedAt || gen.createdAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
