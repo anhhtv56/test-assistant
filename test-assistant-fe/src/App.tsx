@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GeneratePage from './pages/GeneratePage'
 import DashboardPage from './pages/DashboardPage'
+import ViewPage from './pages/ViewPage'
 import { useAuthStore } from './state/auth'
 
 function PrivateRoute({ children }: { children: React.JSX.Element }) {
@@ -100,7 +101,15 @@ function App() {
             </PrivateRoute>
           </Layout>
         } />
+        <Route path="/view/:id" element={
+          <Layout>
+            <PrivateRoute>
+              <ViewPage />
+            </PrivateRoute>
+          </Layout>
+        } />
       </Routes>
+      
     </div>
   )
 }
