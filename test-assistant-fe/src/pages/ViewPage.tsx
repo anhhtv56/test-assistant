@@ -15,7 +15,6 @@ export default function ViewPage() {
   // Metadata state
   const [issueKey, setIssueKey] = useState<string>('');
   const [projectKey, setProjectKey] = useState<string | null>(null);
-  const [published, setPublished] = useState<boolean>(false);
   const [currentVersion, setCurrentVersion] = useState<number>(1);
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>('');
   const [updatedAt, setUpdatedAt] = useState<string>('');
@@ -28,6 +27,16 @@ export default function ViewPage() {
   const [isOwner, setIsOwner] = useState<boolean>(false);
 
   const user = useAuthStore((s) => s.user);
+
+  // Publish state
+  const [published, setPublished] = useState<boolean>(false);
+  const [publishedAt, setPublishedAt] = useState<string | null>(null);
+  const [publishedBy, setPublishedBy] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState<boolean>(false);
+
+  // Download state
+  const [downloading, setDownloading] = useState<boolean>(false);
+
   const setup = () => {
     (async () => {
       if (!id) return;
@@ -52,6 +61,12 @@ export default function ViewPage() {
         setCurrentVersion(viewData.currentVersion || 1);
         setLastUpdatedBy(viewData.lastUpdatedBy || '');
         setUpdatedAt(viewData.updatedAt || '');
+
+        // Set published state
+        setPublished(viewData.published || false);
+        setPublishedAt(viewData.publishedAt || null);
+        setPublishedBy(viewData.publishedBy || null);
+
       } catch (err: any) {
         setError(err?.response?.data?.error || 'Failed to load content');
         setContent('');
@@ -114,6 +129,56 @@ export default function ViewPage() {
 
     // Clear any errors
     setError(null);
+  }
+
+  async function handlePublish(published: boolean) {
+    if (!id) return;
+    setPublishing(true);
+    setError(null);
+
+    try {
+      const res = await api.put(`/generations/${id}/publish`, {
+        published
+      });
+
+      // Update published state
+      setPublished(res.data.data.published);
+      setPublishedAt(res.data.data.publishedAt);
+      setPublishedBy(res.data.data.publishedBy);
+
+    } catch (error: any) {
+      console.error('Failed to publish content:', error);
+      setError(error?.response?.data?.error || 'Failed to publish changes');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      // Request file as blob
+      const res = await api.get(`/generations/${id}/download`, {
+        responseType: 'blob'
+      });
+
+      // Create a blob URL from the response
+      const url = URL.createObjectURL(res.data);
+
+      // Create a temporary anchor element
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename; // Use the filename from state
+      a.click(); // Trigger download
+
+      // Clean up: revoke the blob URL to free memory
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Optionally show error message to user
+    } finally {
+      setDownloading(false);
+    }
   }
 
   if (loading) {
@@ -250,23 +315,52 @@ export default function ViewPage() {
                   </>
                 )}
 
+                {isOwner && (
+                  <button
+                    onClick={() => handlePublish(!published)}
+                    disabled={publishing || !content}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${published
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                  >
+                    {publishing ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                    ) : published ? (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Unpublish
+                      </>
+
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Publish
+                      </>
+                    )}
+                  </button>
+                )}
+
 
                 <button
-                  className="px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+                  onClick={handleDownload}
+                  disabled={downloading || !content}
+                  className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  Publish
-                </button>
-
-                <button
-                  className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download
+                  {downloading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-700 border-t-transparent"></div>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </>
+                  )}
                 </button>
 
                 <button

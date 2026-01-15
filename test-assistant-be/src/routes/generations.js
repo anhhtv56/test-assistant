@@ -324,4 +324,73 @@ router.put('/:id/update', requireAuth, async (req, res, next) => {
   }
 });
 
+router.put('/:id/publish', requireAuth, async (req, res, next) => {
+  try {
+    const { published } = req.body;
+    if (typeof published !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'published must be a boolean' });
+    }
+    const gen = await Generation.findById(req.params.id);
+    if (!gen || gen.email !== req.user.email) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+
+    if (gen.status !== 'completed') {
+      return res.status(400).json({ success: false, error: 'Can only publish completed generations' });
+    }
+    gen.published = published;
+    if (published) {
+      gen.publishedAt = new Date();
+      gen.publishedBy = req.user.email;
+      logger.info(`Generation ${req.params.id} published by ${req.user.email} at ${gen.publishedAt}`);
+    } else {
+      gen.publishedAt = undefined;
+      gen.publishedBy = undefined;
+      logger.info(`Generation ${req.params.id} unpublished by ${req.user.email}`);
+    }
+    await gen.save();
+
+    return res.json({
+      success: true,
+      data: {
+        published: gen.published,
+        publishedAt: gen.publishedAt,
+        publishedBy: gen.publishedBy
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id/download', requireAuth, async (req, res, next) => {
+  try {
+    const gen = await Generation.findById(req.params.id);
+    if (!gen) return res.status(404).json({ success: false, error: 'Not found' });
+
+    // Check if user has permission to download
+    // Allow if it's user's own OR if it's published and completed
+    const isOwner = gen.email === req.user.email;
+    const isPublishedAndCompleted = gen.published && gen.status === 'completed';
+
+    if (!isOwner && !isPublishedAndCompleted) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+
+    if (gen.status !== 'completed') {
+      return res.status(400).json({ success: false, error: 'Not completed' });
+    }
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'text/markdown');
+    res.setHeader('Content-Disposition', `attachment; filename="${gen.result?.markdown?.filename || 'output.md'}"`);
+
+    // Send the markdown content
+    return res.send(gen.result?.markdown?.content || '');
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;
